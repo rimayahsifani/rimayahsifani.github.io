@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balloon Pop Adventure</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #87CEEB, #E0F6FF);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            overflow: hidden;
+            touch-action: manipulation;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        #gameContainer {
+            text-align: center;
+            position: relative;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #4682B4;
+            border-radius: 15px;
+            background: linear-gradient(to bottom, #87CEEB, #B0E0E6);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            max-width: 100vw;
+            max-height: 100vh;
+            width: auto;
+            height: auto;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(255,255,255,0.8);
+            z-index: 10;
+        }
+        
+        @media (max-width: 768px) {
+            #ui {
+                font-size: 14px;
+                top: 5px;
+                left: 5px;
+            }
+            
+            #gameOver {
+                padding: 20px;
+                margin: 10px;
+                max-width: 90vw;
+            }
+            
+            #instructions {
+                font-size: 12px;
+            }
+            
+            .biodata-container {
+                width: 95vw;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            #ui div:last-child {
+                font-size: 14px;
+            }
+            
+            canvas {
+                cursor: pointer;
+            }
+            
+            #restartBtn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+        }
+        
+        #gameOver, #startScreen {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: none;
+            text-align: center;
+            z-index: 20;
+        }
+        
+        #startScreen {
+            display: block;
+        }
+        
+        #restartBtn, #startBtn, #helpBtn {
+            padding: 12px 24px;
+            font-size: 16px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 8px;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+        
+        #restartBtn:hover, #startBtn:hover, #helpBtn:hover {
+            transform: scale(1.05);
+        }
+        
+        #startBtn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            font-size: 18px;
+            padding: 15px 30px;
+        }
+        
+        #helpBtn {
+            background: linear-gradient(45deg, #2196F3, #1976D2);
+            font-size: 14px;
+            padding: 10px 20px;
+        }
+        
+        #instructions {
+            margin-bottom: 15px;
+            color: #555;
+            font-size: 14px;
+            max-width: 350px;
+        }
+        
+        #helpPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.98);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            display: none;
+            text-align: left;
+            z-index: 30;
+            max-width: 400px;
+        }
+        
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+        
+        .game-title {
+            font-size: 32px;
+            font-weight: bold;
+            color: #FF6B6B;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .game-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <div>Skor: <span id="score">0</span></div>
+            <div style="font-size: 12px; margin-top: 5px;">Sentuh/Klik layar atau Spasi untuk terbang!</div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="gameOver">
+            <h2 style="color: #FF6B6B; margin-top: 0;">💥 Game Over!</h2>
+            <p style="font-size: 18px; margin: 20px 0;">Skor Akhir: <span id="finalScore" style="font-weight: bold; color: #FF6B6B;">0</span></p>
+            <button id="restartBtn">🔄 Main Lagi</button>
+        </div>
+        
+        <div id="startScreen">
+            <h1 class="game-title">🎈 Balloon Pop Adventure</h1>
+            <p class="game-subtitle">Petualangan Balon yang Seru!</p>
+            <p style="margin-bottom: 25px; color: #666;">
+                Terbangkan balon Anda setinggi mungkin!<br>
+                Kumpulkan bintang dan hindari rintangan.
+            </p>
+            <button id="startBtn">🚀 MULAI BERMAIN</button><br>
+            <button id="helpBtn">❓ Cara Bermain</button>
+        </div>
+        
+        <div id="helpPanel">
+            <button class="close-btn" onclick="closeHelp()">&times;</button>
+            <h3 style="color: #FF6B6B; margin-top: 0;">📖 Cara Bermain</h3>
+            <div style="text-align: left;">
+                <p><strong>🎯 Tujuan:</strong><br>
+                Terbangkan balon setinggi mungkin dan kumpulkan skor tertinggi!</p>
+                
+                <p><strong>🎮 Kontrol:</strong><br>
+                • Desktop: Klik mouse atau tekan SPASI<br>
+                • Mobile: Sentuh layar</p>
+                
+                <p><strong>⭐ Gameplay:</strong><br>
+                • Hindari kotak merah (rintangan)<br>
+                • Kumpulkan bintang kuning (+10 poin)<br>
+                • Jangan sampai menyentuh tanah</p>
+                
+                <p><strong>💡 Tips:</strong><br>
+                • Timing adalah kunci!<br>
+                • Jangan terbang terlalu tinggi atau rendah</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+
+        let game = {
+            player: {
+                x: 100,
+                y: 300,
+                width: 40,
+                height: 60,
+                velocityY: 0,
+                gravity: 0.5,
+                jumpPower: -12
+            },
+            obstacles: [],
+            stars: [],
+            score: 0,
+            gameRunning: false, 
+            gameStarted: false,  
+            obstacleTimer: 0,
+            starTimer: 0
+        };
+        
+        function drawPlayer() {
+            const player = game.player;
+            
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(player.x + 20, player.y + 50);
+            ctx.lineTo(player.x + 20, player.y - 10);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y + 50, 15, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#FF6B6B';
+            ctx.beginPath();
+            ctx.arc(player.x + 20, player.y, 20, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.beginPath();
+            ctx.arc(player.x + 15, player.y - 5, 8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        function drawObstacles() {
+            ctx.fillStyle = '#FF4444';
+            game.obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                
+                ctx.fillStyle = '#CC3333';
+                ctx.fillRect(obstacle.x + 5, obstacle.y + 5, obstacle.width - 10, obstacle.height - 10);
+                ctx.fillStyle = '#FF4444';
+            });
+        }
+        
+        function drawStars() {
+            game.stars.forEach(star => {
+                ctx.fillStyle = '#FFD700';
+                ctx.save();
+                ctx.translate(star.x + 15, star.y + 15);
+                ctx.rotate(star.rotation);
+                
+                ctx.beginPath();
+                for (let i = 0; i < 5; i++) {
+                    const angle = (i * Math.PI * 2) / 5;
+                    const x = Math.cos(angle) * 12;
+                    const y = Math.sin(angle) * 12;
+                    if (i === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+                star.rotation += 0.1;
+            });
+        }
+        
+        function drawBackground() {
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#E0F6FF');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.8)';
+            for (let i = 0; i < 5; i++) {
+                const x = (i * 200 + Date.now() * 0.02) % (canvas.width + 100) - 50;
+                const y = 50 + i * 30;
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 25, 0, Math.PI * 2);
+                ctx.arc(x + 25, y, 35, 0, Math.PI * 2);
+                ctx.arc(x + 50, y, 25, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            
+            ctx.fillStyle = '#90EE90';
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+            ctx.fillStyle = '#228B22';
+            ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
+        }
+        
+        function updatePlayer() {
+            const player = game.player;
+            
+            player.velocityY += player.gravity;
+            player.y += player.velocityY;
+            
+            if (player.y + player.height > canvas.height - 50) {
+                gameOver();
+            }
+            
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
+        }
+        
+        function updateObstacles() {
+            game.obstacles = game.obstacles.filter(obstacle => {
+                obstacle.x -= 3;
+                return obstacle.x + obstacle.width > 0;
+            });
+            
+            game.obstacleTimer++;
+            if (game.obstacleTimer > 120) { 
+                game.obstacles.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height - 200) + 100,
+                    width: 30,
+                    height: Math.random() * 100 + 50
+                });
+                game.obstacleTimer = 0;
+            }
+        }
+        
+        function updateStars() {
+            game.stars = game.stars.filter(star => {
+                star.x -= 2;
+                return star.x + 30 > 0;
+            });
+            
+        
+            game.starTimer++;
+            if (game.starTimer > 180) { 
+                game.stars.push({
+                    x: canvas.width,
+                    y: Math.random() * (canvas.height - 150) + 50,
+                    rotation: 0
+                });
+                game.starTimer = 0;
+            }
+        }
+        
+        function checkCollisions() {
+            const player = game.player;
+            
+            game.obstacles.forEach(obstacle => {
+                if (player.x < obstacle.x + obstacle.width &&
+                    player.x + player.width > obstacle.x &&
+                    player.y < obstacle.y + obstacle.height &&
+                    player.y + player.height > obstacle.y) {
+                    gameOver();
+                }
+            });
+            
+            game.stars = game.stars.filter(star => {
+                if (player.x < star.x + 30 &&
+                    player.x + player.width > star.x &&
+                    player.y < star.y + 30 &&
+                    player.y + player.height > star.y) {
+                    game.score += 10;
+                    document.getElementById('score').textContent = game.score;
+                    return false; 
+                }
+                return true;
+            });
+        }
+        
+        function gameLoop() {
+            if (!game.gameRunning) return;
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            drawBackground();
+            drawPlayer();
+            drawObstacles();
+            drawStars();
+            
+            if (game.gameStarted) {
+                updatePlayer();
+                updateObstacles();
+                updateStars();
+                checkCollisions();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        function startGame() {
+            game.gameRunning = true;
+            game.gameStarted = true;
+            document.getElementById('startScreen').style.display = 'none';
+            gameLoop();
+        }
+        
+        function showHelp() {
+            document.getElementById('helpPanel').style.display = 'block';
+        }
+        
+        function closeHelp() {
+            document.getElementById('helpPanel').style.display = 'none';
+        }
+        
+        function gameOver() {
+            game.gameRunning = false;
+            game.gameStarted = false;
+            document.getElementById('finalScore').textContent = game.score;
+            document.getElementById('gameOver').style.display = 'block';
+        }
+        
+        function restartGame() {
+            // Reset game state
+            game = {
+                player: {
+                    x: 100,
+                    y: 300,
+                    width: 40,
+                    height: 60,
+                    velocityY: 0,
+                    gravity: 0.5,
+                    jumpPower: -12
+                },
+                obstacles: [],
+                stars: [],
+                score: 0,
+                gameRunning: true,
+                gameStarted: true,
+                obstacleTimer: 0,
+                starTimer: 0
+            };
+            
+            document.getElementById('score').textContent = '0';
+            document.getElementById('gameOver').style.display = 'none';
+            gameLoop();
+        }
+        
+        function jump() {
+            if (game.gameRunning && game.gameStarted) {
+                game.player.velocityY = game.player.jumpPower;
+            }
+        }
+        
+        
+        canvas.addEventListener('click', jump);
+        canvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
+        
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            jump();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+        
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault(); // Prevent scrolling
+        }, { passive: false });
+        
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.key === ' ') {
+                e.preventDefault();
+                jump();
+            }
+            if (e.code === 'ArrowUp' || e.code === 'Enter') {
+                e.preventDefault();
+                jump();
+            }
+        });
+        
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            return false;
+        });
+        
+        let lastTouchEnd = 0;
+        canvas.addEventListener('touchend', (e) => {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                e.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+        
+        canvas.setAttribute('tabindex', '0');
+        canvas.addEventListener('focus', () => {
+            canvas.style.outline = '3px solid #007bff';
+        });
+        canvas.addEventListener('blur', () => {
+            canvas.style.outline = 'none';
+        });
+        
+        document.getElementById('restartBtn').addEventListener('click', restartGame);
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('helpBtn').addEventListener('click', showHelp);
+        
+        gameLoop();
+    </script>
+</body>
+</html>
